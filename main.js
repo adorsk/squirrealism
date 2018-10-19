@@ -5,13 +5,17 @@ class App {
     this.state = {
       svgUrl: './squirrel.svg'
     }
+    this.els = {}
   }
 
   init () {
     this.rootEl = document.createElement('div')
     document.body.appendChild(this.rootEl)
     this.inputs = this.setupInputs()
+    this.els.svg = this.setupSvg()
     this.loadSvg({ svgUrl: this.state.svgUrl })
+    // .then(() => this.startAnimation())
+      .catch(this.handleError)
   }
 
   setupInputs () {
@@ -38,23 +42,54 @@ class App {
     return inputs
   }
 
+  setupSvg () {
+    const svgEl = document.createElementNS('https://www.w3.org/2000/svg', 'svg')
+    document.body.appendChild(svgEl)
+    svgEl.setAttribute('width', 1000)
+    svgEl.setAttribute('height', 1000)
+    return svgEl
+  }
+
   loadSvg ({ svgUrl }) {
-    window.fetch(svgUrl)
+    const svgPromise = window.fetch(svgUrl)
       .then((response) => response.text())
       .then((text) => this.renderSvg({ svgStr: text }))
-      .catch((err) => {
-        console.log('badneessssss', err)
-      })
+      .catch(this.handleError)
+    return svgPromise
   }
 
   renderSvg ({ svgStr }) {
-    // make it into an el
-    d3.select(document.body)
-      .append('svg')
-      .html(svgStr)
+    const parser = new window.DOMParser()
+    const svgDoc = parser.parseFromString(svgStr, 'image/svg+xml')
+    // Achtung! this has a side effect of destroying the soul of rootel in its original doc. weiiiiird. There can be only one. Highlander.
+    svgDoc.rootElement.setAttribute('width', 100)
+    svgDoc.rootElement.setAttribute('height', 100)
+    this.els.svg.appendChild(svgDoc.rootElement)
+    return Promise.resolve()
   }
 
-  render () {
+  startAnimation () {
+    console.log('start!')
+    // start the timer
+    this.timer = d3.interval((t) => {
+      this.step(t)
+    }, 500)
+  }
+
+  step (t) {
+    const pos = this.positionFn({t})
+
+  }
+
+  positionFn ({t}) {
+    return {
+      y: Math.sin(t),
+      x: Math.cos(t)
+    }
+  }
+
+  handleError (e) {
+    console.log('badness!', e)
   }
 }
 
