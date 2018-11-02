@@ -41,6 +41,12 @@ class App {
     });
     inputsDiv.appendChild(inputs.loadButton);
 
+    inputs.goButton = createButton({
+      label: 'Go',
+      onClick: this.startAnimation.bind(this)
+    });
+    inputsDiv.appendChild(inputs.goButton);
+
     return inputs;
   }
 
