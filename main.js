@@ -8,9 +8,11 @@ class App {
     this.els = {};
   }
 
-  init({ scale = 100, cycleLength = 5000 }) {
+  init({ scale = 80, cycleLength = 5000, centerY = 300 }) {
     this.scale = scale;
     this.cycleLength = cycleLength;
+    this.centerY = centerY;
+    this.normalizedPositionFnName = 'easeElastic';
     this.rootEl = document.createElement('div');
     document.body.appendChild(this.rootEl);
     this.inputs = this.setupInputs();
@@ -43,13 +45,32 @@ class App {
     });
     inputsDiv.appendChild(inputs.loadButton);
 
+    // Position function picker
+    inputs.positionFnPicker = document.createElement('select');
+    var easeFnNames = Object.keys(d3).filter(isEaseFn);
+    easeFnNames.forEach(addEaseOption.bind(this));
+    inputs.positionFnPicker.addEventListener(
+      'change',
+      e => (this.normalizedPositionFnName = e.target.value)
+    );
+    inputsDiv.appendChild(inputs.positionFnPicker);
+
+    // Go button
     inputs.goButton = createButton({
       label: 'Go',
       onClick: this.startAnimation.bind(this)
     });
     inputsDiv.appendChild(inputs.goButton);
 
-    return inputs;
+    function addEaseOption(fnName) {
+      var option = document.createElement('option');
+      option.textContent = fnName;
+      option.value = fnName;
+      if (fnName === this.normalizedPositionFnName) {
+        option.selected = 'selected';
+      }
+      inputs.positionFnPicker.appendChild(option);
+    }
   }
 
   setupSvg() {
@@ -79,7 +100,7 @@ class App {
     svgDoc.rootElement.setAttribute('width', 100);
     svgDoc.rootElement.setAttribute('height', 100);
     this.targetSvg = svgDoc.rootElement;
-    this.els.svg.appendChild(svgDoc.rootElement);
+    this.els.svg.appendChild(this.targetSvg);
     return Promise.resolve();
   }
 
@@ -90,8 +111,9 @@ class App {
   }
 
   step(time) {
-    const t = time % this.cycleLength / 1000;
-    const pos = this.positionFn({ t });
+    const t = (time % this.cycleLength) / 1000;
+    var pos = this.positionFn({ t });
+    pos[1] += this.centerY;
     this.targetSvg.setAttribute('transform', `translate(${pos.join(', ')})`);
   }
 
@@ -100,7 +122,9 @@ class App {
   }
 
   positionFn({ t }) {
-    return [t, d3.easeElastic(t)].map(this.scaleIt.bind(this));
+    return [t, d3[this.normalizedPositionFnName](t)].map(
+      this.scaleIt.bind(this)
+    );
   }
 
   handleError(e) {
@@ -113,6 +137,10 @@ function createButton({ onClick, label }) {
   button.innerHTML = label;
   button.addEventListener('click', onClick);
   return button;
+}
+
+function isEaseFn(name) {
+  return name.startsWith('ease');
 }
 
 const app = new App();
