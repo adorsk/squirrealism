@@ -8,8 +8,9 @@ class App {
     this.els = {};
   }
 
-  init({ scale = 100 }) {
+  init({ scale = 100, cycleLength = 5000 }) {
     this.scale = scale;
+    this.cycleLength = cycleLength;
     this.rootEl = document.createElement('div');
     document.body.appendChild(this.rootEl);
     this.inputs = this.setupInputs();
@@ -89,7 +90,7 @@ class App {
   }
 
   step(time) {
-    const t = time % 1000 / 1000;
+    const t = time % this.cycleLength / 1000;
     const pos = this.positionFn({ t });
     this.targetSvg.setAttribute('transform', `translate(${pos.join(', ')})`);
   }
