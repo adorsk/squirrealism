@@ -8,7 +8,8 @@ class App {
     this.els = {};
   }
 
-  init() {
+  init({ scale = 100 }) {
+    this.scale = scale;
     this.rootEl = document.createElement('div');
     document.body.appendChild(this.rootEl);
     this.inputs = this.setupInputs();
@@ -76,6 +77,7 @@ class App {
     // Achtung! this has a side effect of destroying the soul of rootel in its original doc. weiiiiird. There can be only one. Highlander.
     svgDoc.rootElement.setAttribute('width', 100);
     svgDoc.rootElement.setAttribute('height', 100);
+    this.targetSvg = svgDoc.rootElement;
     this.els.svg.appendChild(svgDoc.rootElement);
     return Promise.resolve();
   }
@@ -83,20 +85,21 @@ class App {
   startAnimation() {
     console.log('start!');
     // start the timer
-    this.timer = d3.interval(t => {
-      this.step(t);
-    }, 500);
+    this.timer = d3.timer(this.step.bind(this));
   }
 
-  step(t) {
+  step(time) {
+    const t = time % 1000 / 1000;
     const pos = this.positionFn({ t });
+    this.targetSvg.setAttribute('transform', `translate(${pos.join(', ')})`);
+  }
+
+  scaleIt(val) {
+    return this.scale * val;
   }
 
   positionFn({ t }) {
-    return {
-      y: Math.sin(t),
-      x: Math.cos(t)
-    };
+    return [t, d3.easeElastic(t)].map(this.scaleIt.bind(this));
   }
 
   handleError(e) {
@@ -112,4 +115,4 @@ function createButton({ onClick, label }) {
 }
 
 const app = new App();
-app.init();
+app.init({});
